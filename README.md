@@ -2,8 +2,7 @@
 
 OpenSource launcher for people with reduced mobility for using Android devices. The App requires that an a USB auxiliary device must be plugged in. This device has a LCD screen for notifications and several buttons for using a smartphone or tablet. The launcher has a voice-guide that tells the user everything that it's happening in the device (screen off/on, screen rotation, incoming call, etc.). With this App installed and running with the USB auxiliary device plugged in, the smartphone or tablet can be used even with screen off. This App requires Android 3.2 or higher with USB Host support.
 
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/zhzwvnaZ4EE/0.jpg)](http://www.youtube.com/watch?v=zhzwvnaZ4EE "Video Title")
-
+![alt screenshot](https://raw.githubusercontent.com/lrusso/MobilityLauncher/master/Screenshot.jpg)
 
 The app allows the user to:
 - Listen to music
