@@ -26,7 +26,7 @@ How to manage a call:
 - Press down to end the call
 
 Video demo:
-https://www.youtube.com/watch?v=zhzwvnaZ4EE
+- https://www.youtube.com/watch?v=zhzwvnaZ4EE
 
 TO UNINSTALL: Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
 
