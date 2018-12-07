@@ -25,6 +25,9 @@ How to manage a call:
 - Press up to answer the call
 - Press down to end the call
 
+Video demo:
+https://www.youtube.com/watch?v=zhzwvnaZ4EE
+
 TO UNINSTALL: Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
 
 NOTE 1: In Android 5.0 (Lollipop) or higher, you have to set the way you want to answer a call by going to Settings/Accessibility/Answering/ending calls.
