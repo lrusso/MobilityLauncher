@@ -28,7 +28,7 @@ How to manage a call:
 Video demo:
 - https://www.youtube.com/watch?v=zhzwvnaZ4EE
 
-Download App from:
+Download App:
 - https://github.com/lrusso/MobilityLauncher/raw/master/MobilityLauncher.apk
 
 TO UNINSTALL: Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
