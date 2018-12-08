@@ -46,11 +46,19 @@
 		        android:layout_width="290dp"
 		        android:layout_height="wrap_content"
 		        android:layout_centerHorizontal="true"
-		        android:layout_marginBottom="7dp"
 	        	android:textSize="15sp"
 		        android:text="@string/app_source"
 		        android:layout_below="@id/buttonApp"/>
-    				
+
+    		<Button android:id="@+id/buttonPrivacy"
+		        android:layout_width="290dp"
+		        android:layout_height="wrap_content"
+		        android:layout_centerHorizontal="true"
+		        android:layout_marginBottom="7dp"
+	        	android:textSize="15sp"
+		        android:text="@string/app_privacy"
+		        android:layout_below="@id/buttonSource"/>
+    						
 		</RelativeLayout>
 		
 	</RelativeLayout>
