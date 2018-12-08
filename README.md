@@ -28,6 +28,9 @@ How to manage a call:
 Video demo:
 - https://www.youtube.com/watch?v=zhzwvnaZ4EE
 
+Download App from:
+- https://github.com/lrusso/MobilityLauncher/raw/master/MobilityLauncher.apk
+
 TO UNINSTALL: Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
 
 NOTE 1: In Android 5.0 (Lollipop) or higher, you have to set the way you want to answer a call by going to Settings/Accessibility/Answering/ending calls.
