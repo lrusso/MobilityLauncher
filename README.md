@@ -25,7 +25,7 @@ How to use it:
 
 How to type a message? There are two ways available:
 - Press up and down to move through characters and symbols and press right to input the selected character.
-- Use the voice recognition system with up to 10 possible interpretations for you to select (may requiere Internet).
+- Use the voice recognition system with up to 10 possible interpretations for you to select (may require Internet).
 
 How to manage a call:
 - Press up to answer the call
