@@ -23,7 +23,7 @@ How to use it:
 - Press up and down to browse the menus
 - Press right to select an option
 
-How can i type a message? You have two ways available:
+How to type a message? There are two ways available:
 - Press up and down to move through characters and symbols and press right to input the selected character.
 - Use the voice recognition system with up to 10 possible interpretations for you to select (may requiere Internet).
 
