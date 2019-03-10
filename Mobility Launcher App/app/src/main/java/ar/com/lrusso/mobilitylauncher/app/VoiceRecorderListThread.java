@@ -23,11 +23,11 @@ public class VoiceRecorderListThread extends AsyncTask<String, String, Boolean>
 				String finalPath = "";
 				if (externalStoragePath.toString().endsWith("/"))
 					{
-					finalPath = externalStoragePath + "BlindCommunicator/Audio";
+					finalPath = externalStoragePath + "MobilityLauncher/Audio";
 					}
 					else
 					{
-					finalPath = externalStoragePath + "/BlindCommunicator/Audio";
+					finalPath = externalStoragePath + "/MobilityLauncher/Audio";
 					}
 				File pathChecker = new File(finalPath);
 				pathChecker.mkdirs();

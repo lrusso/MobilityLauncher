@@ -2,48 +2,45 @@ package ar.com.lrusso.mobilitylauncher.app;
 
 import android.app.*;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.hardware.usb.UsbManager;
 import android.media.*;
+import android.os.Handler;
 import android.net.Uri;
 import android.os.*;
+import android.Manifest;
+import android.database.Cursor;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.speech.tts.*;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
+import android.annotation.TargetApi;
 import android.telephony.*;
 import android.view.*;
 import android.view.View.OnKeyListener;
 import android.widget.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
+import java.util.Calendar;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import ar.com.lrusso.mobilitylauncher.app.R;
 
 import java.util.*;
 
 public class Main extends Activity implements TextToSpeech.OnInitListener
 	{
-	private static final int DISP_CHAR  = 0;
-	private static final int DISP_DEC   = 1;
-	private static final int DISP_HEX   = 2;
-	private static final int LINEFEED_CODE_CR   = 0;
-	private static final int LINEFEED_CODE_CRLF = 1;
-	private static final int LINEFEED_CODE_LF   = 2;
-	private int mWriteLinefeedCode = LINEFEED_CODE_LF;
-	private static String arduinoValue = "";
-	FTDriver mSerial;
-	private StringBuilder mText = new StringBuilder();
-	private boolean mStop = false;
-	boolean lastDataIs0x0D = false;
-	Handler mHandler = new Handler();
-	private int mDisplayType = DISP_CHAR;
-	private int mReadLinefeedCode = LINEFEED_CODE_LF;
-	private int mBaudrate = FTDriver.BAUD9600;
-	private int mDataBits = FTDriver.FTDI_SET_DATA_BITS_8;
-	private int mParity = FTDriver.FTDI_SET_DATA_PARITY_NONE;
-	private int mStopBits = FTDriver.FTDI_SET_DATA_STOP_BITS_1;
-	private int mFlowControl = FTDriver.FTDI_SET_FLOW_CTRL_NONE;
-	private int mBreak = FTDriver.FTDI_SET_NOBREAK;
-	private boolean mRunningMainLoop = false;
-	private static final String ACTION_USB_PERMISSION = "ar.com.lrusso.mobilitylauncher.USB_PERMISSION";
-	private final static String BR = System.getProperty("line.separator");
-	
+	private AppService usbService;
+	private MyHandler mHandler;
+	private String arduinoValue = "";
+
+	public static int SETTINGS_REQUEST_CODE = 123;
+	public static int PERMISSION_REQUEST_CODE = 456;
 	private static boolean speakOnResume = false;
 	public static TextView messages;
 	public static TextView calls;
@@ -55,12 +52,16 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 	private TextView applications;
 	private TextView settings;
 	private TextView status;
+	private Activity activity;
 	private boolean okToFinish = false;
-	
+	private boolean hasProfileChangerPermission = false;
+
     @Override protected void onCreate(Bundle savedInstanceState)
     	{
     	super.onCreate(savedInstanceState);
     	setContentView(R.layout.main);
+    	activity = this;
+
 		GlobalVars.lastActivity = Main.class;
 		GlobalVars.lastActivityArduino = this;
 		GlobalVars.mainActivity = this;
@@ -82,40 +83,53 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 		GlobalVars.startTTS(GlobalVars.tts);
 		GlobalVars.tts = new TextToSpeech(this,this);
 		GlobalVars.tts.setPitch((float) 1.0);
-		GlobalVars.tts.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener()
+
+		try
 			{
-			@Override public void onUtteranceCompleted(String utteranceId)
-				{
-				try
-					{
-					GlobalVars.musicPlayer.setVolume(1f,1f);
-					}
-					catch(NullPointerException e)
-					{
-					}
-					catch(Exception e)
-					{
-					}
-				}
-			});
+			//SETS THE ALARM VIBRATOR VARIABLE
+			GlobalVars.alarmVibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+			}
+			catch(Exception e)
+			{
+			}
 
-		//SETS THE ALARM VIBRATOR VARIABLE
-		GlobalVars.alarmVibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-		
-		//SETS PROFILE TO NORMAL
-		AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
-		audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+		try
+			{
+			//SETS PROFILE TO NORMAL
+			AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+			audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+			}
+			catch(Exception e)
+			{
+			}
 
-		GlobalVars.alarmAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-		GlobalVars.openAndLoadAlarmFile();
-		GlobalVars.setText(alarms,false, getResources().getString(R.string.mainAlarms) + " (" + GlobalVars.getPendingAlarmsForTodayCount() + ")");
-		
+		try
+			{
+			GlobalVars.openAndLoadAlarmFile();
+			GlobalVars.setText(alarms,false, getResources().getString(R.string.mainAlarms) + " (" + GlobalVars.getPendingAlarmsForTodayCount() + ")");
+			}
+			catch(Exception e)
+			{
+			}
+
+		//HIDES THE NAVIGATION BAR
+		if (Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
+
+		//CHECKS IF MARSHMALLOW TO ASK THE USER FOR PERMISSIONS
+		if (Build.VERSION.SDK_INT>=23){try{marshmallowPermissions();}catch(Exception e){}}
+
+		//CHECKS IF MARSHMALLOW TO ASK FOR FLOATING VIEWS (FOR ANSWERING AND REJECTING CALLS)
+		if (Build.VERSION.SDK_INT>=23){testDrawOverlays();}
+
+		//CHECKS IF MARSHALLOW TO ASK FOR CHANGE THE DEVICE PROFILE
+		if (Build.VERSION.SDK_INT>=23){testProfilePermission();}
+
 		//LIST EVERY MUSIC FILE WITH THE MEDIA INFORMATION TO USE IT WITH THE MUSIC PLAYER
 		new MusicPlayerThreadRefreshDatabase().execute("");
-		
+
 		//READ WEB BOOKMARKS DATABASE
 		GlobalVars.readBookmarksDatabase();
-		
+
 		if (GlobalVars.deviceIsAPhone()==true)
 			{
 			messages.setText(GlobalVars.context.getResources().getString(R.string.mainMessages) + " (" + String.valueOf(GlobalVars.getMessagesUnreadCount()) + ")");
@@ -124,7 +138,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			{
 			messages.setText(GlobalVars.context.getResources().getString(R.string.mainMessages) + " (0)");
 			}
-		
+
 		if (GlobalVars.deviceIsAPhone()==true)
 			{
 			calls.setText(GlobalVars.context.getResources().getString(R.string.mainCalls) + " (" + String.valueOf(GlobalVars.getCallsMissedCount()) + ")");
@@ -139,52 +153,85 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			{
 			RingtoneManager manager = new RingtoneManager(this);
 			manager.setType(RingtoneManager.TYPE_ALARM);
-			GlobalVars.cursor = manager.getCursor();
-			while (GlobalVars.cursor.moveToNext())
+			Cursor cursorAlarms = manager.getCursor();
+			if (cursorAlarms!=null)
 				{
-				GlobalVars.settingsToneAlarmTitle.add(GlobalVars.cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX));
-				GlobalVars.settingsToneAlarmUri.add(GlobalVars.cursor.getString(RingtoneManager.URI_COLUMN_INDEX));
-				GlobalVars.settingsToneAlarmID.add(GlobalVars.cursor.getString(RingtoneManager.ID_COLUMN_INDEX));
+				if(cursorAlarms.moveToFirst())
+					{
+					while(!cursorAlarms.isAfterLast())
+						{
+						GlobalVars.settingsToneAlarmTitle.add(cursorAlarms.getString(RingtoneManager.TITLE_COLUMN_INDEX));
+						GlobalVars.settingsToneAlarmUri.add(cursorAlarms.getString(RingtoneManager.URI_COLUMN_INDEX));
+						GlobalVars.settingsToneAlarmID.add(cursorAlarms.getString(RingtoneManager.ID_COLUMN_INDEX));
+						cursorAlarms.moveToNext();
+						}
+					}
+				//cursorAlarms.close();
 				}
+			}
+			catch(NullPointerException e)
+			{
 			}
 			catch(Exception e)
 			{
 			}
-			
+
 		//GETS EVERY NOTIFICATION TONE
 		try
 			{
 			RingtoneManager manager = new RingtoneManager(this);
 			manager.setType(RingtoneManager.TYPE_NOTIFICATION);
-			GlobalVars.cursor = manager.getCursor();
-			while (GlobalVars.cursor.moveToNext())
+			Cursor cursorNotificationTone = manager.getCursor();
+			if (cursorNotificationTone!=null)
 				{
-				GlobalVars.settingsToneNotificationTitle.add(GlobalVars.cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX));
-				GlobalVars.settingsToneNotificationUri.add(GlobalVars.cursor.getString(RingtoneManager.URI_COLUMN_INDEX));
-				GlobalVars.settingsToneNotificationID.add(GlobalVars.cursor.getString(RingtoneManager.ID_COLUMN_INDEX));
+				if(cursorNotificationTone.moveToFirst())
+					{
+					while(!cursorNotificationTone.isAfterLast())
+						{
+						GlobalVars.settingsToneNotificationTitle.add(cursorNotificationTone.getString(RingtoneManager.TITLE_COLUMN_INDEX));
+						GlobalVars.settingsToneNotificationUri.add(cursorNotificationTone.getString(RingtoneManager.URI_COLUMN_INDEX));
+						GlobalVars.settingsToneNotificationID.add(cursorNotificationTone.getString(RingtoneManager.ID_COLUMN_INDEX));
+						cursorNotificationTone.moveToNext();
+						}
+					}
+				//cursorNotificationTone.close();
 				}
+			}
+			catch(NullPointerException e)
+			{
 			}
 			catch(Exception e)
 			{
 			}
-		
+
 		//GETS EVERY CALL TONE
 		try
 			{
 			RingtoneManager manager = new RingtoneManager(this);
 			manager.setType(RingtoneManager.TYPE_RINGTONE);
-			GlobalVars.cursor = manager.getCursor();
-			while (GlobalVars.cursor.moveToNext())
+			Cursor cursorCallTone = manager.getCursor();
+			if (cursorCallTone!=null)
 				{
-			    GlobalVars.settingsToneCallTitle.add(GlobalVars.cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX));
-			    GlobalVars.settingsToneCallUri.add(GlobalVars.cursor.getString(RingtoneManager.URI_COLUMN_INDEX));
-			    GlobalVars.settingsToneCallID.add(GlobalVars.cursor.getString(RingtoneManager.ID_COLUMN_INDEX));
+				if(cursorCallTone.moveToFirst())
+					{
+					while(!cursorCallTone.isAfterLast())
+						{
+						GlobalVars.settingsToneCallTitle.add(cursorCallTone.getString(RingtoneManager.TITLE_COLUMN_INDEX));
+						GlobalVars.settingsToneCallUri.add(cursorCallTone.getString(RingtoneManager.URI_COLUMN_INDEX));
+						GlobalVars.settingsToneCallID.add(cursorCallTone.getString(RingtoneManager.ID_COLUMN_INDEX));
+						cursorCallTone.moveToNext();
+						}
+					}
+				//cursorCallTone.close();
 				}
+			}
+			catch(NullPointerException e)
+			{
 			}
 			catch(Exception e)
 			{
 			}
-			
+
 		//GETS READING SPEED VALUE
 		String readingSpeedString = GlobalVars.readFile("readingspeed.cfg");
 		if (readingSpeedString=="")
@@ -207,7 +254,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 				GlobalVars.writeFile("readingspeed.cfg",String.valueOf(GlobalVars.settingsTTSReadingSpeed));
 				}
 			}
-		
+
 		//GETS INPUT MODE VALUE
 		String inputModeString = GlobalVars.readFile("inputmode.cfg");
 		if (inputModeString=="")
@@ -227,10 +274,10 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 				GlobalVars.writeFile("inputmode.cfg",String.valueOf(GlobalVars.INPUT_KEYBOARD));
 				}
 			}
-		
+
 		//GETS SCREEN TIMEOUT POSSIBLE VALUES
 		int[] arr = getResources().getIntArray(R.array.screenTimeOutSeconds);
-			for(int i=0;i<arr.length;i++)
+		for(int i=0;i<arr.length;i++)
 			{
 			GlobalVars.settingsScreenTimeOutValues.add(String.valueOf(arr[i]));
 			}
@@ -246,7 +293,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			{
 			GlobalVars.alarmTimeMinutesValues.add(String.valueOf(arr3[i]));
 			}
-			
+
 		//GETS SCREEN TIMEOUT VALUE
 		String screenTimeOutString = GlobalVars.readFile("screentimeout.cfg");
 		if (screenTimeOutString=="")
@@ -266,10 +313,10 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 				GlobalVars.writeFile("screentimeout.cfg",String.valueOf(GlobalVars.settingsScreenTimeOut));
 				}
 			}
-		
+
 		//SETS BLUETOOTH VALUE STATE
 		GlobalVars.bluetoothEnabled = GlobalVars.isBluetoothEnabled();
-		
+
 		Handler handler = new Handler();
 		handler.postDelayed(new Runnable()
 			{
@@ -278,35 +325,33 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 				speakOnResume = true;
 				}
 			}, 2000);
-		
+
 		GlobalVars.startService(MobilityLauncherService.class);
-		
-		//STARTS ARDUINO DETECTING CODE
-		mBaudrate = FTDriver.BAUD9600;
-		mSerial = new FTDriver((UsbManager) getSystemService(Context.USB_SERVICE));
+
+		mHandler = new MyHandler(this);
+
 		IntentFilter filter = new IntentFilter();
-		filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-		filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+		filter.addAction(AppService.ACTION_USB_PERMISSION_GRANTED);
+		filter.addAction(AppService.ACTION_NO_USB);
+		filter.addAction(AppService.ACTION_USB_DISCONNECTED);
+		filter.addAction(AppService.ACTION_USB_NOT_SUPPORTED);
+		filter.addAction(AppService.ACTION_USB_PERMISSION_NOT_GRANTED);
 		registerReceiver(mUsbReceiver, filter);
-		mBaudrate = loadDefaultBaudrate();
-		PendingIntent permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-		mSerial.setPermissionIntent(permissionIntent);
-		if (mSerial.begin(mBaudrate))
-			{
-			loadDefaultSettingValues();
-			mainloop();
-			}
-			else
-			{
-			}
+
+		startService(AppService.class, usbConnection);
     	}
 		
     @Override protected void onDestroy()
     	{
-		shutdownEverything();
-		mSerial.end();
-		mStop = true;
+    	try
+			{
+			usbService.setHandler(null);
+			}
+			catch(Exception e)
+			{
+			}
 		unregisterReceiver(mUsbReceiver);
+		unbindService(usbConnection);
     	super.onDestroy();
     	}
 		
@@ -324,6 +369,8 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 		GlobalVars.selectTextView(music,false);
 		GlobalVars.selectTextView(internet,false);
 		GlobalVars.selectTextView(alarms,false);
+		GlobalVars.selectTextView(voicerecorder,false);
+		GlobalVars.selectTextView(applications,false);
 		GlobalVars.selectTextView(settings,false);
 		GlobalVars.selectTextView(status,false);
 		
@@ -347,54 +394,44 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			{
 			calls.setText(GlobalVars.context.getResources().getString(R.string.mainCalls) + " (0)");
 			}
+
+		// CHECKS IF THE PERMISSION FOR PROFILE CHANGING IS GRANTED
+			if (Build.VERSION.SDK_INT>=23)
+			{
+			testProfileChanger();
+			}
+
+		//HIDES THE NAVIGATION BAR
+		if (Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()
 		{
-		if (GlobalVars.arduinoStringToSend!="")
+		if (MobilityLauncherService.myView!=null)
 			{
-			try
+			if (MobilityLauncherService.myView.getVisibility()==View.VISIBLE)
 				{
-				String strWrite = GlobalVars.arduinoStringToSend;
-				strWrite = changeLinefeedcode(strWrite);
-				mSerial.write(strWrite.getBytes(), strWrite.length()-1);
-				}
-				catch(NullPointerException e)
-				{
-				}
-				catch(Exception e)
-				{
-				}
-			GlobalVars.arduinoStringToSend="";
-			}
-			else
-			{
-			if (MobilityLauncherService.myView!=null)
-				{
-				if (MobilityLauncherService.myView.getVisibility()==View.VISIBLE)
+				int result = GlobalVars.detectArduinoKeyUpWhileCalling();
+				switch (result)
 					{
-					int result = GlobalVars.detectArduinoKeyUpWhileCalling();
-					switch (result)
-						{
-						case GlobalVars.ARDUINO_UP:
-						MobilityLauncherService.acceptCall();
-						break;
+					case GlobalVars.ARDUINO_UP:
+					MobilityLauncherService.acceptCall();
+					break;
 						
-						case GlobalVars.ARDUINO_DOWN:
-						MobilityLauncherService.rejectCall();
-						break;
-						}
-					GlobalVars.arduinoKeyPressed=-1;
+					case GlobalVars.ARDUINO_DOWN:
+					MobilityLauncherService.rejectCall();
+					break;
 					}
-					else
-					{
-					normalKeyBehavior();
-					}
+				GlobalVars.arduinoKeyPressed=-1;
 				}
 				else
 				{
 				normalKeyBehavior();
 				}
+			}
+			else
+			{
+			normalKeyBehavior();
 			}
 		GlobalVars.arduinoKeyPressed = -1;
 		return null;
@@ -660,7 +697,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			break;
 		
 			case 9: //SETTINGS
-			GlobalVars.startActivity(Settings.class);
+			GlobalVars.startActivity(SettingsApp.class);
 			break;
 		
 			case 10: //STATUS
@@ -812,326 +849,334 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			return getResources().getString(R.string.mainCarrierNotAvailable);
 			}
 		}
-	
-	private void mainloop()
+
+	@TargetApi(Build.VERSION_CODES.M)
+	public void marshmallowPermissions()
 		{
-		mStop = false;
-		mRunningMainLoop = true;
-		new Thread(mLoop).start();
+		List<String> listPermissionsNeeded = new ArrayList<String>();
+
+		if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+			listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+			}
+
+		if (checkSelfPermission(Manifest.permission.READ_CONTACTS)!=PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.READ_CONTACTS);
+			}
+
+		if (checkSelfPermission(Manifest.permission.READ_CONTACTS)!=PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.READ_CONTACTS);
+			listPermissionsNeeded.add(Manifest.permission.WRITE_CONTACTS);
+			}
+
+		if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
+			}
+
+		if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.READ_SMS);
+			listPermissionsNeeded.add(Manifest.permission.SEND_SMS);
+			listPermissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
+			}
+
+		if (checkSelfPermission(Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.CALL_PHONE);
+			listPermissionsNeeded.add(Manifest.permission.PROCESS_OUTGOING_CALLS);
+			}
+
+		if (checkSelfPermission(Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.READ_CALL_LOG);
+			listPermissionsNeeded.add(Manifest.permission.WRITE_CALL_LOG);
+			}
+
+		if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+			{
+			listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
+			}
+
+		// ANSWERING CALLS FOR ANDROID 8.0 AND ABOVE
+		if(Build.VERSION.SDK_INT >= 26)
+			{
+			if(checkSelfPermission(Manifest.permission.ANSWER_PHONE_CALLS) != PackageManager.PERMISSION_GRANTED)
+				{
+				listPermissionsNeeded.add(Manifest.permission.ANSWER_PHONE_CALLS);
+				}
+			}
+
+		if (!listPermissionsNeeded.isEmpty())
+			{
+			requestPermissions(listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),PERMISSION_REQUEST_CODE);
+			}
 		}
 
-	private Runnable mLoop = new Runnable()
+	@Override protected void onActivityResult(int requestCode, int resultCode, Intent data)
 		{
-		@Override public void run()
+		if (requestCode == SETTINGS_REQUEST_CODE)
 			{
-			int len;
-			byte[] rbuf = new byte[4096];
-			for (;;)
+			if (Build.VERSION.SDK_INT>=23)
 				{
-				len = mSerial.read(rbuf);
-				rbuf[len] = 0;
-				if (len > 0)
-					{
-					switch (mDisplayType)
-						{
-						case DISP_CHAR:
-						setSerialDataToTextView(mDisplayType, rbuf, len, "", "");
-						break;
-					
-						case DISP_DEC:
-						setSerialDataToTextView(mDisplayType, rbuf, len, "013", "010");
-						break;
-					
-						case DISP_HEX:
-						setSerialDataToTextView(mDisplayType, rbuf, len, "0d", "0a");
-						break;
-						}
-					mHandler.post(new Runnable()
-						{
-						public void run()
-							{
-							arduinoValue = arduinoValue + mText;
-							if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_UP_STRING))
-								{
-								GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_UP;
-								GlobalVars.lastActivityArduino.toString();
-								arduinoValue = "";
-								}
-							else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_DOWN_STRING))
-								{
-								GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_DOWN;
-								GlobalVars.lastActivityArduino.toString();
-								arduinoValue = "";
-								}
-							else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_LEFT_STRING))
-								{
-								GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_LEFT;
-								GlobalVars.lastActivityArduino.toString();
-								arduinoValue = "";
-								}
-							else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_RIGHT_STRING))
-								{
-								GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_RIGHT;
-								GlobalVars.lastActivityArduino.toString();
-								arduinoValue = "";
-								}
-							else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_SELECT_STRING))
-								{
-								GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_SELECT;
-								GlobalVars.lastActivityArduino.toString();
-								arduinoValue = "";
-								PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-								boolean isScreenOn = pm.isScreenOn();
-								if (isScreenOn==false)
-									{
-									try
-										{
-										PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK |
-																				  PowerManager.ACQUIRE_CAUSES_WAKEUP |
-																				  PowerManager.ON_AFTER_RELEASE, "TurnOnTheScreenTag");
-										wl.acquire();
-										wl.release(); 
-										}
-										catch(NullPointerException e)
-										{
-										}
-										catch(Exception e)
-										{
-										}
-									}
-									else
-									{
-									try
-										{
-										PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TurnOffTheScreenTag");
-										wl.acquire();
-										}
-										catch(NullPointerException e)
-										{
-										}
-										catch(Exception e)
-										{
-										}
-									}
-								}
-							mText.setLength(0);
-							}
-						});
-					}
 				try
 					{
-					Thread.sleep(50);
+					executeDrawOverlays();
 					}
-					catch (InterruptedException e)
+				catch(Exception e)
 					{
-					}
-				if (mStop)
-					{
-					mRunningMainLoop = false;
-					return;
 					}
 				}
 			}
-		};
-
-	private String IntToHex2(int Value)
-		{
-		char HEX2[] = {Character.forDigit((Value >> 4) & 0x0F, 16),Character.forDigit(Value & 0x0F, 16)};
-		String Hex2Str = new String(HEX2);
-		return Hex2Str;
 		}
 
-	void setSerialDataToTextView(int disp, byte[] rbuf, int len, String sCr, String sLf)
+	@TargetApi(Build.VERSION_CODES.M)
+	public void testDrawOverlays()
 		{
-		int tmpbuf;
-		for (int i = 0; i < len; ++i)
+		if (!Settings.canDrawOverlays(this))
 			{
-			if ((mReadLinefeedCode == LINEFEED_CODE_CR) && (rbuf[i] == 0x0D))
+			ContextThemeWrapper themedContext = new ContextThemeWrapper(this, android.R.style.Theme_Holo_Light_Dialog_NoActionBar);
+			new AlertDialog.Builder(themedContext).setCancelable(false).setTitle(getResources().getString(R.string.googleRequestTitle)).setMessage(getResources().getString(R.string.googleRequest1)).setPositiveButton(getResources().getString(R.string.googleRequestOk),new DialogInterface.OnClickListener()
 				{
-				mText.append(sCr);
-				mText.append(BR);
-				}
-			else if ((mReadLinefeedCode == LINEFEED_CODE_LF) && (rbuf[i] == 0x0A))
-				{
-				mText.append(sLf);
-				mText.append(BR);
-				}
-			else if ((mReadLinefeedCode == LINEFEED_CODE_CRLF) && (rbuf[i] == 0x0D) && (rbuf[i + 1] == 0x0A))
-				{
-				mText.append(sCr);
-				if (disp != DISP_CHAR)
+				public void onClick(DialogInterface dialog,int which)
 					{
-					mText.append(" ");
+					Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.getPackageName()));
+					activity.startActivityForResult(intent, SETTINGS_REQUEST_CODE);
 					}
-				mText.append(sLf);
-				mText.append(BR);
-				++i;
-				}
-			else if ((mReadLinefeedCode == LINEFEED_CODE_CRLF) && (rbuf[i] == 0x0D))
+				}).show();
+			}
+		}
+
+	@TargetApi(Build.VERSION_CODES.M)
+	public void executeDrawOverlays()
+		{
+		try
+			{
+			if (Settings.canDrawOverlays(this))
 				{
-				mText.append(sCr);
-				lastDataIs0x0D = true;
+				MobilityLauncherService.addFloatingView();
 				}
-			else if (lastDataIs0x0D && (rbuf[0] == 0x0A))
+			}
+			catch(Exception e)
+			{
+			}
+		}
+
+	@TargetApi(Build.VERSION_CODES.M)
+	public void testProfilePermission()
+		{
+		NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+		if (!notificationManager.isNotificationPolicyAccessGranted())
+			{
+			ContextThemeWrapper themedContext = new ContextThemeWrapper(this, android.R.style.Theme_Holo_Light_Dialog_NoActionBar);
+			new AlertDialog.Builder(themedContext).setCancelable(false).setTitle(getResources().getString(R.string.googleRequestTitle)).setMessage(getResources().getString(R.string.googleRequest2)).setPositiveButton(getResources().getString(R.string.googleRequestOk),new DialogInterface.OnClickListener()
 				{
-				if (disp != DISP_CHAR)
+				public void onClick(DialogInterface dialog,int which)
 					{
-					mText.append(" ");
+					Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+					startActivity(intent);
 					}
-				mText.append(sLf);
-				mText.append(BR);
-				lastDataIs0x0D = false;
-				}
-			else if (lastDataIs0x0D && (i != 0))
+				}).show();
+			}
+		}
+
+	@TargetApi(Build.VERSION_CODES.M)
+	public void testProfileChanger()
+		{
+		if (hasProfileChangerPermission==false)
+			{
+			NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+			if (notificationManager.isNotificationPolicyAccessGranted())
 				{
-				lastDataIs0x0D = false;
-				--i;
-				}
-			else
-				{
-				switch (disp)
+				hasProfileChangerPermission = true;
+				try
 					{
-					case DISP_CHAR:
-					mText.append((char) rbuf[i]);
-					break;
-									
-					case DISP_DEC:
-					tmpbuf = rbuf[i];
-					if (tmpbuf < 0)
+					//SETS PROFILE TO NORMAL
+					AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+					audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+					}
+					catch(Exception e)
+					{
+					}
+				}
+			}
+		}
+
+	@TargetApi(Build.VERSION_CODES.M)
+	@Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+		{
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if (requestCode == PERMISSION_REQUEST_CODE)
+			{
+			try
+				{
+				if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)==PackageManager.PERMISSION_GRANTED)
+					{
+					if (GlobalVars.musicPlayerDatabaseReady==true)
 						{
-						tmpbuf += 256;
+						new MusicPlayerThreadRefreshDatabase().execute("");
 						}
-					mText.append(String.format("%1$03d", tmpbuf));
-					mText.append(" ");
-					break;
-									
-					case DISP_HEX:
-					mText.append(IntToHex2((int) rbuf[i]));
-					mText.append(" ");
-					break;
-							
-					default:
-					break;
 					}
+				}
+				catch(Exception e)
+				{
 				}
 			}
 		}
 
-	void loadDefaultSettingValues()
+	private void startService(Class<?> service, ServiceConnection serviceConnection)
 		{
-		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-		String res = pref.getString("display_list", Integer.toString(DISP_CHAR));
-		mDisplayType = Integer.valueOf(res);
-		res = pref.getString("fontsize_list", Integer.toString(12));
-		res = pref.getString("readlinefeedcode_list", Integer.toString(LINEFEED_CODE_CRLF));
-		mReadLinefeedCode = Integer.valueOf(res);
-		res = pref.getString("databits_list", Integer.toString(FTDriver.FTDI_SET_DATA_BITS_8));
-		mDataBits = Integer.valueOf(res);
-		mSerial.setSerialPropertyDataBit(mDataBits, FTDriver.CH_A);
-		res = pref.getString("parity_list", Integer.toString(FTDriver.FTDI_SET_DATA_PARITY_NONE));
-		mParity = Integer.valueOf(res) << 8;
-		mSerial.setSerialPropertyParity(mParity, FTDriver.CH_A);
-		res = pref.getString("stopbits_list", Integer.toString(FTDriver.FTDI_SET_DATA_STOP_BITS_1));
-		mStopBits = Integer.valueOf(res) << 11;
-		mSerial.setSerialPropertyStopBits(mStopBits, FTDriver.CH_A);
-		res = pref.getString("flowcontrol_list", Integer.toString(FTDriver.FTDI_SET_FLOW_CTRL_NONE));
-		mFlowControl = Integer.valueOf(res) << 8;
-		mSerial.setFlowControl(FTDriver.CH_A, mFlowControl);
-		res = pref.getString("break_list", Integer.toString(FTDriver.FTDI_SET_NOBREAK));
-		mBreak = Integer.valueOf(res) << 14;
-		mSerial.setSerialPropertyBreak(mBreak, FTDriver.CH_A);
-		mSerial.setSerialPropertyToChip(FTDriver.CH_A);
-		}
-
-	int loadDefaultBaudrate()
-		{
-		int res = FTDriver.BAUD9600;
-		mBaudrate = FTDriver.BAUD9600;
-		return res;
-		}
-
-	private void openUsbSerial()
-		{
-		if (!mSerial.isConnected())
+		if (!AppService.SERVICE_CONNECTED)
 			{
-			mBaudrate = loadDefaultBaudrate();
-			if (!mSerial.begin(mBaudrate))
+			Intent startService = new Intent(this, service);
+			startService(startService);
+			}
+		Intent bindingIntent = new Intent(this, service);
+		bindService(bindingIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+		}
+
+	private void addReceivedData(String data)
+		{
+		arduinoValue = arduinoValue + data;
+
+		if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_UP_STRING))
+			{
+			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_UP;
+			GlobalVars.lastActivityArduino.toString();
+			arduinoValue = "";
+			}
+		else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_DOWN_STRING))
+			{
+			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_DOWN;
+			GlobalVars.lastActivityArduino.toString();
+			arduinoValue = "";
+			}
+		else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_LEFT_STRING))
+			{
+			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_LEFT;
+			GlobalVars.lastActivityArduino.toString();
+			arduinoValue = "";
+			}
+		else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_RIGHT_STRING))
+			{
+			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_RIGHT;
+			GlobalVars.lastActivityArduino.toString();
+			arduinoValue = "";
+			}
+		else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_SELECT_STRING))
+			{
+			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_SELECT;
+			GlobalVars.lastActivityArduino.toString();
+			arduinoValue = "";
+			PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+			boolean isScreenOn = pm.isScreenOn();
+			if (isScreenOn==false)
 				{
-				//CONNECTION NOT ESTABLISHED
-				return;
+				try
+					{
+					PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK |
+					PowerManager.ACQUIRE_CAUSES_WAKEUP |
+					PowerManager.ON_AFTER_RELEASE, "TurnOnTheScreenTag");
+					wl.acquire();
+					wl.release();
+					}
+					catch(NullPointerException e)
+					{
+					}
+					catch(Exception e)
+					{
+					}
 				}
 				else
 				{
-				//CONNECTION ESTABLISHED
-				//mensajeEstado(getResources().getString(R.string.textoConexionEstablecida));
+				try
+					{
+					PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TurnOffTheScreenTag");
+					wl.acquire();
+					}
+					catch(NullPointerException e)
+					{
+					}
+					catch(Exception e)
+					{
+					}
 				}
-			}
-		if (!mRunningMainLoop)
-			{
-			mainloop();
 			}
 		}
 
-	protected void onNewIntent(Intent intent)
+	private static class MyHandler extends Handler
 		{
-		openUsbSerial();
-		};
-	
-	BroadcastReceiver mUsbReceiver = new BroadcastReceiver()
-		{
-		public void onReceive(Context context, Intent intent)
+		private final WeakReference<Main> mActivity;
+
+		public MyHandler(Main activity)
 			{
-			String action = intent.getAction();
-			if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action))
+			mActivity = new WeakReference<>(activity);
+			}
+
+		@Override public void handleMessage(Message msg)
+			{
+			switch (msg.what)
 				{
-				if (!mSerial.isConnected())
+				case AppService.MESSAGE_FROM_SERIAL_PORT:
+				String data = (String) msg.obj;
+				if (data != null)
 					{
-					mBaudrate = loadDefaultBaudrate();
-					mSerial.begin(mBaudrate);
-					loadDefaultSettingValues();
+					mActivity.get().addReceivedData(data);
 					}
-				if (!mRunningMainLoop)
-					{
-					mainloop();
-					}
-				}
-				else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action))
-				{
-				mStop = true;
-				mSerial.usbDetached(intent);
-				mSerial.end();
-				}
-			else if (ACTION_USB_PERMISSION.equals(action))
-				{
-				synchronized (this)
-					{
-					if (!mSerial.isConnected())
-						{
-						mBaudrate = loadDefaultBaudrate();
-						mSerial.begin(mBaudrate);
-						loadDefaultSettingValues();
-						}
-					}
-				if (!mRunningMainLoop)
-					{
-					mainloop();
-					}
+				break;
+
+				default:
+				break;
 				}
 			}
-		};
-		
-	private String changeLinefeedcode(String str)
-		{
-		str = str.replace("\\r", "\r");
-		str = str.replace("\\n", "\n");
-		switch (mWriteLinefeedCode)
-			{
-			case LINEFEED_CODE_LF:
-			str = str + "\n";
-			break;
-			
-			default:
-			}
-		return str;
 		}
+
+	private final ServiceConnection usbConnection = new ServiceConnection()
+		{
+		@Override public void onServiceConnected(ComponentName arg0, IBinder arg1)
+			{
+			usbService = ((AppService.UsbBinder) arg1).getService();
+			}
+
+		@Override public void onServiceDisconnected(ComponentName arg0)
+			{
+			usbService = null;
+			}
+		};
+
+	private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver()
+		{
+		@Override public void onReceive(Context context, Intent intent)
+			{
+			switch (intent.getAction())
+				{
+				case AppService.ACTION_USB_PERMISSION_GRANTED:
+				try
+					{
+					usbService.setHandler(mHandler);
+					}
+					catch(Exception e)
+					{
+					}
+				break;
+
+				case AppService.ACTION_USB_DISCONNECTED:
+				try
+					{
+					usbService.setHandler(null);
+					}
+					catch(Exception e)
+					{
+					}
+				break;
+
+				default:
+				break;
+				}
+			}
+		};
 	}

@@ -6,9 +6,11 @@ import android.content.pm.*;
 import android.database.*;
 import android.graphics.*;
 import android.media.*;
+import android.annotation.TargetApi;
 import android.media.MediaPlayer.*;
 import android.net.*;
 import android.net.wifi.*;
+import android.os.Build;
 import android.os.Vibrator;
 import android.provider.*;
 import android.speech.tts.*;
@@ -53,7 +55,6 @@ public class GlobalVars extends Application
 	public static final String				ARDUINO_RIGHT_STRING = "arduinokeyright"; // DO NOT CHANGE THIS
 	public static final int 				ARDUINO_SELECT = 5;
 	public static final String				ARDUINO_SELECT_STRING = "arduinokeyselect"; // DO NOT CHANGE THIS
-	public static String					arduinoStringToSend = "";
 	public static int 						activityItemLocation = 0;
 	public static int 						activityItemLimit = 0;
 	public static float 					x1,x2,y1,y2;
@@ -72,8 +73,6 @@ public class GlobalVars extends Application
 	public static Activity                  inputModeKeyboardTalkbackActivity = null;
 	
 	//VARIABLES FOR CONTACTS
-	public static boolean 					contactListReady = false;
-	public static List<String>				contactDataBase = new ArrayList<String>();
 	public static String 					contactToDeleteName;
 	public static String 					contactToDeletePhone;
 	public static boolean 					contactWasDeleted = false;
@@ -1653,5 +1652,28 @@ public class GlobalVars extends Application
     		return false;  
     		}  
 		return true;  
+		}
+
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	public static void hideNavigationBar(Activity a)
+		{
+		try
+			{
+			if(Build.VERSION.SDK_INT > 11 && Build.VERSION.SDK_INT < 19)
+				{ // lower api
+				View v = a.getWindow().getDecorView();
+				v.setSystemUiVisibility(View.GONE);
+				}
+				else if(Build.VERSION.SDK_INT >= 19)
+				{
+				//for new api versions.
+				View decorView = a.getWindow().getDecorView();
+				int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+				decorView.setSystemUiVisibility(uiOptions);
+				}
+			}
+			catch(Exception e)
+			{
+			}
 		}
 	}

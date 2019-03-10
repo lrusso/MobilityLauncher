@@ -38,6 +38,9 @@ public class InputVoice extends Activity
 		GlobalVars.activityItemLimit=4;
 		stringResults.clear();
 		GlobalVars.setText(resultsTextview, false, getResources().getString(R.string.layoutInputVoicePossibleResults) + stringResults.size() + ")");
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 		
 	@Override public void onResume()
@@ -53,6 +56,9 @@ public class InputVoice extends Activity
 		GlobalVars.selectTextView(enter,false);
 		GlobalVars.selectTextView(goback,false);
 		GlobalVars.talk(getResources().getString(R.string.layoutInputVoiceOnResume));
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()

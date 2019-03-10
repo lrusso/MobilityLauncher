@@ -27,14 +27,20 @@ public class InputKeyboard extends Activity
 		if (GlobalVars.inputModeKeyboardOnlyNumbers==true)
 			{
 			original = getResources().getStringArray(R.array.keysOnlyNumbers);
+			keyList = new ArrayList<String>(Arrays.asList(original));
+			limit = keyList.size() -1;
+			location = -1;
 			}
 			else
 			{
 			original = getResources().getStringArray(R.array.keysAll);
+			keyList = new ArrayList<String>(Arrays.asList(original));
+			limit = keyList.size() -1;
+			location = limit;
 			}
-		keyList = new ArrayList<String>(Arrays.asList(original));
-		limit = keyList.size() -1;
-		location = limit;
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 		
 	@Override public void onResume()
@@ -43,8 +49,10 @@ public class InputKeyboard extends Activity
 		try{GlobalVars.alarmVibrator.cancel();}catch(NullPointerException e){}catch(Exception e){}
 		GlobalVars.lastActivity = InputKeyboard.class;
 		GlobalVars.talk(getResources().getString(R.string.layoutInputKeysOnResume));
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
-	
 	
 	@Override public String toString()
 		{
@@ -211,7 +219,14 @@ public class InputKeyboard extends Activity
 			{
 			GlobalVars.talk(value.substring(value.length()-1,value.length()) + getResources().getString(R.string.layoutInputKeysEntered));
 			message.setText(value + "_");
-			location=limit;
+			if (GlobalVars.inputModeKeyboardOnlyNumbers==true)
+				{
+				location=-1;
+				}
+				else
+				{
+				location=limit;
+				}
 			}
 		}
 		

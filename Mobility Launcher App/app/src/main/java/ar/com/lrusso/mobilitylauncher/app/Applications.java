@@ -25,6 +25,9 @@ public class Applications extends Activity
 		GlobalVars.activityItemLocation=0;
 		GlobalVars.activityItemLimit=3;
 		new ApplicationsThread().execute();
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
     	}
 
 	@Override public void onResume()
@@ -41,6 +44,9 @@ public class Applications extends Activity
 		GlobalVars.setText(applications,false, getResources().getString(R.string.layoutApplicationsList));
 		GlobalVars.talk(getResources().getString(R.string.layoutApplicationsOnResume));
 		selectedApplication = -1;
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()

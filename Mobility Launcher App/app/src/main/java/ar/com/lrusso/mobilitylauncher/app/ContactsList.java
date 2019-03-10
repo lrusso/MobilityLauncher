@@ -5,6 +5,8 @@ import android.os.*;
 import android.view.*;
 import android.widget.*;
 import ar.com.lrusso.mobilitylauncher.app.R;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ContactsList extends Activity
 	{
@@ -14,8 +16,11 @@ public class ContactsList extends Activity
 	private TextView delete;
 	private TextView goback;
 	public int selectedContact = -1;
-	
-    @Override protected void onCreate(Bundle savedInstanceState)
+
+	public static boolean contactListReady = false;
+	public static List<String> contactDataBase = new ArrayList<String>();
+
+	@Override protected void onCreate(Bundle savedInstanceState)
     	{
     	super.onCreate(savedInstanceState);
     	setContentView(R.layout.contactslist);
@@ -30,6 +35,9 @@ public class ContactsList extends Activity
 		GlobalVars.activityItemLimit=5;
 		selectedContact = -1;
 		new ContactsListThread().execute("");
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
     	}
 		
     @Override protected void onResume()
@@ -67,7 +75,10 @@ public class ContactsList extends Activity
 				GlobalVars.talk(getResources().getString(R.string.layoutContactsListOnResume));
 				}
 			}
-    	}    
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
+    	}
     
 	@Override public String toString()
 		{
@@ -99,15 +110,15 @@ public class ContactsList extends Activity
 				}
 				else
 				{
-				if (GlobalVars.contactListReady==false)
+				if (contactListReady==false)
 					{
 					GlobalVars.talk(getResources().getString(R.string.layoutContactsListPleaseWait));
 					}
 					else
 					{
-					GlobalVars.talk(GlobalVars.contactsGetNameFromListValue(GlobalVars.contactDataBase.get(selectedContact)) +
+					GlobalVars.talk(GlobalVars.contactsGetNameFromListValue(contactDataBase.get(selectedContact)) +
 									getResources().getString(R.string.layoutContactsListWithThePhoneNumber) +
-									GlobalVars.divideNumbersWithBlanks(GlobalVars.contactsGetPhoneNumberFromListValue(GlobalVars.contactDataBase.get(selectedContact))));
+									GlobalVars.divideNumbersWithBlanks(GlobalVars.contactsGetPhoneNumberFromListValue(contactDataBase.get(selectedContact))));
 					}
 				}
 			break;
@@ -147,24 +158,24 @@ public class ContactsList extends Activity
 		switch (GlobalVars.activityItemLocation)
 			{
 			case 1: //READ CONTACT NAME
-			if (GlobalVars.contactListReady==false)
+			if (contactListReady==false)
 				{
 				GlobalVars.talk(getResources().getString(R.string.layoutContactsListPleaseWait));
 				}
 				else
 				{
-				if (GlobalVars.contactDataBase.size()>0)
+				if (contactDataBase.size()>0)
 					{
-					if (selectedContact+1==GlobalVars.contactDataBase.size())
+					if (selectedContact+1==contactDataBase.size())
 						{
 						selectedContact = -1;
 						}
 					selectedContact = selectedContact + 1;
-					GlobalVars.setText(contacts, true, GlobalVars.contactsGetNameFromListValue(GlobalVars.contactDataBase.get(selectedContact)) + "\n" +
-													   GlobalVars.contactsGetPhoneNumberFromListValue(GlobalVars.contactDataBase.get(selectedContact)));
-					GlobalVars.talk(GlobalVars.contactsGetNameFromListValue(GlobalVars.contactDataBase.get(selectedContact)) +
+					GlobalVars.setText(contacts, true, GlobalVars.contactsGetNameFromListValue(contactDataBase.get(selectedContact)) + "\n" +
+													   GlobalVars.contactsGetPhoneNumberFromListValue(contactDataBase.get(selectedContact)));
+					GlobalVars.talk(GlobalVars.contactsGetNameFromListValue(contactDataBase.get(selectedContact)) +
 									getResources().getString(R.string.layoutContactsListWithThePhoneNumber) +
-									GlobalVars.divideNumbersWithBlanks(GlobalVars.contactsGetPhoneNumberFromListValue(GlobalVars.contactDataBase.get(selectedContact))));
+									GlobalVars.divideNumbersWithBlanks(GlobalVars.contactsGetPhoneNumberFromListValue(contactDataBase.get(selectedContact))));
 					}
 					else
 					{
@@ -174,7 +185,7 @@ public class ContactsList extends Activity
 			break;
 
 			case 2: //CALL TO CONTACT
-			if (GlobalVars.contactListReady==false)
+			if (contactListReady==false)
 				{
 				GlobalVars.talk(getResources().getString(R.string.layoutContactsListPleaseWait));
 				}
@@ -188,7 +199,7 @@ public class ContactsList extends Activity
 					{
 					if (GlobalVars.deviceIsAPhone()==true)
 						{
-						String number = "tel:" + GlobalVars.contactDataBase.get(selectedContact).substring(GlobalVars.contactDataBase.get(selectedContact).lastIndexOf("|") + 1,GlobalVars.contactDataBase.get(selectedContact).length());
+						String number = "tel:" + contactDataBase.get(selectedContact).substring(contactDataBase.get(selectedContact).lastIndexOf("|") + 1,contactDataBase.get(selectedContact).length());
 						GlobalVars.callTo(number);
 						}
 						else
@@ -200,7 +211,7 @@ public class ContactsList extends Activity
 			break;
 
 			case 3: //SEND A MESSAGE
-			if (GlobalVars.contactListReady==false)
+			if (contactListReady==false)
 				{
 				GlobalVars.talk(getResources().getString(R.string.layoutContactsListPleaseWait));
 				}
@@ -217,8 +228,8 @@ public class ContactsList extends Activity
 						GlobalVars.startActivity(MessagesCompose.class);
 						try
 							{
-							MessagesCompose.messageToContactNameValue = GlobalVars.contactsGetNameFromListValue(GlobalVars.contactDataBase.get(selectedContact));
-							MessagesCompose.messageToPhoneNumberValue = GlobalVars.contactDataBase.get(selectedContact).substring(GlobalVars.contactDataBase.get(selectedContact).lastIndexOf("|") + 1,GlobalVars.contactDataBase.get(selectedContact).length()); 
+							MessagesCompose.messageToContactNameValue = GlobalVars.contactsGetNameFromListValue(contactDataBase.get(selectedContact));
+							MessagesCompose.messageToPhoneNumberValue = contactDataBase.get(selectedContact).substring(contactDataBase.get(selectedContact).lastIndexOf("|") + 1,contactDataBase.get(selectedContact).length()); 
 							}
 							catch(Exception e)
 							{
@@ -233,7 +244,7 @@ public class ContactsList extends Activity
 			break;
 			
 			case 4: //DELETE CONTACT
-			if (GlobalVars.contactListReady==false)
+			if (contactListReady==false)
 				{
 				GlobalVars.talk(getResources().getString(R.string.layoutContactsListPleaseWait));
 				}
@@ -245,8 +256,8 @@ public class ContactsList extends Activity
 					}
 					else
 					{
-					GlobalVars.contactToDeleteName = GlobalVars.contactDataBase.get(selectedContact).substring(0, GlobalVars.contactDataBase.get(selectedContact).lastIndexOf("|"));
-					GlobalVars.contactToDeletePhone = GlobalVars.contactDataBase.get(selectedContact).substring(GlobalVars.contactDataBase.get(selectedContact).lastIndexOf("|") + 1,GlobalVars.contactDataBase.get(selectedContact).length());
+					GlobalVars.contactToDeleteName = contactDataBase.get(selectedContact).substring(0, contactDataBase.get(selectedContact).lastIndexOf("|"));
+					GlobalVars.contactToDeletePhone = contactDataBase.get(selectedContact).substring(contactDataBase.get(selectedContact).lastIndexOf("|") + 1,contactDataBase.get(selectedContact).length());
 					GlobalVars.startActivity(ContactsDelete.class);
 					}
 				}
@@ -263,24 +274,24 @@ public class ContactsList extends Activity
 		switch (GlobalVars.activityItemLocation)
 			{
 			case 1: //READ CONTACT NAME
-			if (GlobalVars.contactListReady==false)
+			if (contactListReady==false)
 				{
 				GlobalVars.talk(getResources().getString(R.string.layoutContactsListPleaseWait));
 				}
 				else
 				{
-				if (GlobalVars.contactDataBase.size()>0)
+				if (contactDataBase.size()>0)
 					{
 					if (selectedContact-1<0)
 						{
-						selectedContact=GlobalVars.contactDataBase.size();
+						selectedContact=contactDataBase.size();
 						}
 					selectedContact = selectedContact - 1;
-					GlobalVars.setText(contacts, true, GlobalVars.contactsGetNameFromListValue(GlobalVars.contactDataBase.get(selectedContact)) + "\n" +
-													   GlobalVars.contactsGetPhoneNumberFromListValue(GlobalVars.contactDataBase.get(selectedContact)));
-					GlobalVars.talk(GlobalVars.contactsGetNameFromListValue(GlobalVars.contactDataBase.get(selectedContact)) +
+					GlobalVars.setText(contacts, true, GlobalVars.contactsGetNameFromListValue(contactDataBase.get(selectedContact)) + "\n" +
+													   GlobalVars.contactsGetPhoneNumberFromListValue(contactDataBase.get(selectedContact)));
+					GlobalVars.talk(GlobalVars.contactsGetNameFromListValue(contactDataBase.get(selectedContact)) +
 									getResources().getString(R.string.layoutContactsListWithThePhoneNumber) +
-									GlobalVars.divideNumbersWithBlanks(GlobalVars.contactsGetPhoneNumberFromListValue(GlobalVars.contactDataBase.get(selectedContact))));
+									GlobalVars.divideNumbersWithBlanks(GlobalVars.contactsGetPhoneNumberFromListValue(contactDataBase.get(selectedContact))));
 					}
 					else
 					{

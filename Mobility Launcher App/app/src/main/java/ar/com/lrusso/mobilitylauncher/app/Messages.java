@@ -25,6 +25,9 @@ public class Messages extends Activity
 		GlobalVars.activityItemLocation=0;
 		GlobalVars.activityItemLimit=4;
 		GlobalVars.setText(inbox, false, GlobalVars.context.getResources().getString(R.string.layoutMessagesInbox) + " (" + String.valueOf(GlobalVars.getMessagesUnreadCount()) + ")");
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
     	}
 		
 	@Override public void onResume()
@@ -49,6 +52,9 @@ public class Messages extends Activity
 			{
 			GlobalVars.talk(getResources().getString(R.string.layoutMessagesOnResume));
 			}
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()

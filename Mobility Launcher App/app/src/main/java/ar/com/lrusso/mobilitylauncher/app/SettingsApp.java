@@ -9,7 +9,7 @@ import android.os.*;
 import android.widget.*;
 import ar.com.lrusso.mobilitylauncher.app.R;
 
-public class Settings extends Activity
+public class SettingsApp extends Activity
 	{
 	private TextView readingspeed;
 	private TextView screentimeout;
@@ -30,7 +30,7 @@ public class Settings extends Activity
     	{
     	super.onCreate(savedInstanceState);
     	setContentView(R.layout.settings);
-		GlobalVars.lastActivity = Settings.class;
+		GlobalVars.lastActivity = SettingsApp.class;
 		GlobalVars.lastActivityArduino = this;
     	readingspeed = (TextView) findViewById(R.id.readingspeed);
     	screentimeout = (TextView) findViewById(R.id.screentimeout);
@@ -131,13 +131,16 @@ public class Settings extends Activity
 			{
 			GlobalVars.setText(inputmode,false,getResources().getString(R.string.layoutSettingsInputMode) + getResources().getString(R.string.layoutSettingsInputModeVoice));
 			}
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 		
 	@Override public void onResume()
 		{
 		super.onResume();
 		try{GlobalVars.alarmVibrator.cancel();}catch(NullPointerException e){}catch(Exception e){}
-		GlobalVars.lastActivity = Settings.class;
+		GlobalVars.lastActivity = SettingsApp.class;
 		GlobalVars.lastActivityArduino = this;
 		GlobalVars.activityItemLocation=0;
 		GlobalVars.activityItemLimit=12;
@@ -154,6 +157,9 @@ public class Settings extends Activity
 		GlobalVars.selectTextView(privacypolicy,false);
 		GlobalVars.selectTextView(goback,false);
 		GlobalVars.talk(getResources().getString(R.string.layoutSettingsOnResume));
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()
@@ -533,7 +539,7 @@ public class Settings extends Activity
 			break;
 			
 			case 7: //WIFI
-			WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+			WifiManager wifiManager = (WifiManager)GlobalVars.context.getSystemService(Context.WIFI_SERVICE);
 			if (wifiManager.isWifiEnabled()==true)
 				{
 				wifiManager.setWifiEnabled(false);

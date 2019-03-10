@@ -24,6 +24,9 @@ public class Calls extends Activity
 		goback = (TextView) findViewById(R.id.goback);
 		GlobalVars.activityItemLocation=0;
 		GlobalVars.activityItemLimit=4;
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
         }
     
 	@Override public void onResume()
@@ -47,6 +50,9 @@ public class Calls extends Activity
 			{
 			GlobalVars.talk(getResources().getString(R.string.layoutCallsOnResume));
 			}
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()

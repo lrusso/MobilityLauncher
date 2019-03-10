@@ -22,6 +22,9 @@ public class VoiceRecorder extends Activity
 		goback = (TextView) findViewById(R.id.goback);
 		GlobalVars.activityItemLocation=0;
 		GlobalVars.activityItemLimit=3;
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
     	}
 
 	@Override public void onResume()
@@ -44,6 +47,9 @@ public class VoiceRecorder extends Activity
 			{
 			GlobalVars.talk(getResources().getString(R.string.layoutVoiceRecorderOnResume));
 			}
+
+		//HIDES THE NAVIGATION BAR
+		if (android.os.Build.VERSION.SDK_INT>11){try{GlobalVars.hideNavigationBar(this);}catch(Exception e){}}
 		}
 	
 	@Override public String toString()
