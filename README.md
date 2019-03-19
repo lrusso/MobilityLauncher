@@ -4,13 +4,13 @@ OpenSource launcher for the mobility impaired for using Android devices. The App
 
 ![alt screenshot](https://raw.githubusercontent.com/lrusso/MobilityLauncher/master/MobilityLauncher.png)
 
-Video demo:
+## Video demo
 - https://www.youtube.com/watch?v=zhzwvnaZ4EE
 
-Download App:
+## Download App
 - https://github.com/lrusso/MobilityLauncher/raw/master/MobilityLauncher.apk
 
-The app allows the user to:
+## The app allows the user to
 - Listen to music
 - Use a voice recorder
 - Send and receive SMS
@@ -19,20 +19,23 @@ The app allows the user to:
 - Create and delete contacts
 - Browse the web with Google engine as an a starting point
 
-How to use it:
+## How to use it
 - Press up and down to browse the menus
 - Press right to select an option
 
-How to type a message? There are two ways available:
+## How to type a message? There are two ways available
 - Press up and down to move through characters and symbols and press right to input the selected character.
 - Use the voice recognition system with up to 10 possible interpretations for you to select (may require Internet).
 
-How to manage a call:
+## How to manage a call
 - Press up to answer the call
 - Press down to end the call
 
-TO UNINSTALL: Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
+## TO UNINSTALL
+- Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
 
-NOTE 1: In Android 5.0 (Lollipop) or higher, you have to set the way you want to answer a call by going to Settings/Accessibility/Answering/ending calls.
+## NOTE 1:
+In Android 5.0 (Lollipop) or higher, you have to set the way you want to answer a call by going to Settings/Accessibility/Answering/ending calls.
 
-NOTE 2: If you have a device with Android 4.4 (KitKat) or higher, you must set Mobility Launcher as your App for messages. To do so, you must go to Settings/Default applications/Messages and then select Mobility Launcher from the list. Also, you will need a TTS software installed in your device in order to this App to work. You can install, for example, Google TTS for free at https://play.google.com/store/apps/details?id=com.google.android.tts.
+## NOTE 2:
+If you have a device with Android 4.4 (KitKat) or higher, you must set Mobility Launcher as your App for messages. To do so, you must go to Settings/Default applications/Messages and then select Mobility Launcher from the list. Also, you will need a TTS software installed in your device in order to this App to work. You can install, for example, Google TTS for free at https://play.google.com/store/apps/details?id=com.google.android.tts.
