@@ -34,8 +34,5 @@ OpenSource launcher for the mobility impaired for using Android devices. The App
 ## TO UNINSTALL
 - Go to Settings/System Settings/Applications/Mobility Launcher/Uninstall
 
-## NOTE 1
-In Android 5.0 (Lollipop) or higher, you have to set the way you want to answer a call by going to Settings/Accessibility/Answering/ending calls.
-
-## NOTE 2
-If you have a device with Android 4.4 (KitKat) or higher, you must set Mobility Launcher as your App for messages. To do so, you must go to Settings/Default applications/Messages and then select Mobility Launcher from the list. Also, you will need a TTS software installed in your device in order to this App to work. You can install, for example, Google TTS for free at https://play.google.com/store/apps/details?id=com.google.android.tts.
+## IMPORTANT NOTE
+In between Android 5.0 (Lollipop) and Android 7.0 (Nougat), you have to set the way you want to answer a call by going to Settings/Accessibility/Answering/ending calls. In Android 8.0 and higher there is no problem with this. If you have a device with Android 4.4 (KitKat) or higher, you must set Mobility Launcher as your App for messages. To do so, you must go to Settings/Default applications/Messages and then select Mobility Launcher from the list. Also, you will need a TTS software installed in your device in order to this App to work. You can install, for example, Google TTS for free at https://play.google.com/store/apps/details?id=com.google.android.tts.
