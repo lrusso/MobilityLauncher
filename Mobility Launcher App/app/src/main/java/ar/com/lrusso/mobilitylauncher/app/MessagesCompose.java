@@ -81,6 +81,10 @@ public class MessagesCompose extends Activity
 			select();
 			break;
 
+			case GlobalVars.ACTION_SELECT_PREVIOUS:
+			previousItem();
+			break;
+
 			case GlobalVars.ACTION_EXECUTE:
 			execute();
 			break;

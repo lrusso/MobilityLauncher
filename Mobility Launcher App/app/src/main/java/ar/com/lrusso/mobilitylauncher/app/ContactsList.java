@@ -89,6 +89,10 @@ public class ContactsList extends Activity
 			select();
 			break;
 
+			case GlobalVars.ACTION_SELECT_PREVIOUS:
+			previousItem();
+			break;
+
 			case GlobalVars.ACTION_EXECUTE:
 			execute();
 			break;
