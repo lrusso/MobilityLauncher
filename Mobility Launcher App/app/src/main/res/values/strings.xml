@@ -20,6 +20,7 @@
     <string name="mainCallsNoMissed">Calls. No missed calls.</string>
     <string name="mainCallsOneMissed">Calls. One missed call.</string>
     <string name="mainCallsNotAvailable">Calls. Not available in this device.</string>
+	<string name="mainCallsNotAvailableOS">The Android version of this device doesn\'t allow Mobility Launcher to access the call log.</string>
     <string name="mainNotAvailable">This option is not available in this device.</string>
 	<string name="mainContacts">Contacts</string>
     <string name="mainMusicPlayer">Music</string>
@@ -48,8 +49,8 @@
 	<string name="mainWifiOff">and the wifi is off.</string>
 	<string name="mainMusicPlayerPleaseTryAgain">Please try again in a few moments when the music player has processed all your music files.</string>
 	<string name="mainNoTTSInstalledTitle">Error</string>
-	<string name="mainNoTTSInstalledMessage">TTS software not found.\nPlease download Google TTS App (free App) in order to this App to work.</string>
-	<string name="mainNoTTSInstalledButton">Download Google TTS</string>
+	<string name="mainNoTTSInstalledMessage">TTS software not found. Please download Google TTS App (free App) in order to this App to work.</string>
+	<string name="mainNoTTSInstalledButton">Ok, I will.</string>
 	<string name="mainPressBack">Press Back again to close the App.</string>
 	
     <string name="monday">Monday</string>
