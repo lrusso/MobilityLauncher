@@ -6,8 +6,8 @@ android {
         applicationId "ar.com.lrusso.mobilitylauncher"
         minSdkVersion 14
         targetSdkVersion 26
-        versionCode 18
-        versionName "1.5.6.5"
+        versionCode 19
+        versionName "1.5.6.6"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
