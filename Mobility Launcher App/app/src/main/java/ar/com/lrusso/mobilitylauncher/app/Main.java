@@ -407,43 +407,10 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 	
 	@Override public String toString()
 		{
-		if (MobilityLauncherService.myView!=null)
-			{
-			if (MobilityLauncherService.myView.getVisibility()==View.VISIBLE)
-				{
-				int result = GlobalVars.detectArduinoKeyUpWhileCalling();
-				switch (result)
-					{
-					case GlobalVars.ARDUINO_UP:
-					MobilityLauncherService.acceptCall();
-					break;
-						
-					case GlobalVars.ARDUINO_DOWN:
-					MobilityLauncherService.rejectCall();
-					break;
-					}
-				GlobalVars.arduinoKeyPressed=-1;
-				}
-				else
-				{
-				normalKeyBehavior();
-				}
-			}
-			else
-			{
-			normalKeyBehavior();
-			}
-		GlobalVars.arduinoKeyPressed = -1;
-		return null;
-		}
-	
-	public void normalKeyBehavior()
-		{
 		int result = GlobalVars.detectArduinoKeyUp();
 		switch (result)
 			{
 			case GlobalVars.ACTION_SELECT:
-				
 			select();
 			break;
 
@@ -451,6 +418,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			execute();
 			break;
 			}
+		return null;
 		}
 	
     public void onInit(int status)
@@ -1104,12 +1072,14 @@ public class Main extends Activity implements TextToSpeech.OnInitListener
 			{
 			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_UP;
 			GlobalVars.lastActivityArduino.toString();
+			MobilityLauncherService.acceptCall();
 			arduinoValue = "";
 			}
 		else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_DOWN_STRING))
 			{
 			GlobalVars.arduinoKeyPressed = GlobalVars.ARDUINO_DOWN;
 			GlobalVars.lastActivityArduino.toString();
+			MobilityLauncherService.rejectCall();
 			arduinoValue = "";
 			}
 		else if (arduinoValue.toLowerCase().contains(GlobalVars.ARDUINO_LEFT_STRING))
