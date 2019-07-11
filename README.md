@@ -8,7 +8,7 @@ OpenSource launcher for the mobility impaired for using Android devices. The App
 - https://www.youtube.com/watch?v=zhzwvnaZ4EE
 
 ## Download App
-- https://lrusso.github.io/MobilityLauncher/MobilityLauncher.apk
+- https://lrusso.github.io/MobilityLauncher/MobilityLauncher.htm
 
 ## The app allows the user to
 - Listen to music
